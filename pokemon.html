@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<!-- API: http://pokeapi.co/ -->
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="https://www.clipartmax.com/png/middle/147-1475559_pokeball-clipart-svg-pokeball-icon.png" type="image/jpg">
+	<title>Pokedex</title>
+	<style>
+		* {
+			box-sizing: border-box;
+			color: white;
+		}
+		body, html {
+			padding: 0;
+			margin: 0;
+			background-color: #333;
+		}
+
+		.navBtn {
+			display: inline-block;
+			padding: 10px 20px;
+			background-color: red;
+			color: white;
+			text-decoration: none;
+			font-weight: bold;
+			box-shadow: 2px 4px 5px #0c0818;
+			transition: all 0.2s;
+			border-radius: 15px;
+		}
+		#navBtn:hover {
+			display: inline-block;
+			padding: 10px 20px;
+			background-color:  #13112b;
+			text-decoration: none;
+			font-weight: bolder;
+			box-shadow: 2px 4px 5px #0c0818;
+		}
+		#navBtn:active {
+			display: inline-block;
+			padding: 10px 20px;
+			background-color: #0c0818;
+			color: white;
+			text-decoration: none;
+			font-weight: bold;
+			box-shadow: none;
+		}
+
+		#pokemon {
+			display: flex;
+			flex-wrap: wrap;
+			background-color: #ef5350;
+			width: 1000px;
+			height: 1000px;
+			margin: auto;
+			margin-top: 50px;
+			border: 10px solid red;
+			border-radius: 5%;
+			box-shadow: 0 10px 10px #0c0818;
+		}
+		#header {
+			flex-basis: 100%;
+			padding: 20px;
+			font-size: 36px;
+		}
+		.headerElement {
+			display: inline-block;
+			background-color: #263238;
+			border: 5px solid grey;
+			border-radius: 15px;
+			margin: 0 10px;
+			padding: 10px;
+			height: 75px;
+		}
+		#name {
+			width: 75%;
+		}
+		#number {
+			width: 15%;
+			text-align: right;
+		}
+		#imageContainer {
+			flex-basis: 35%;
+			margin: 0 10px;
+			padding: 10px;
+			height: 350px;
+			background-color: #263238;
+			border: 5px solid grey;
+			border-radius: 15px;
+		}
+		#buttonContainer {
+			flex-basis: 35%;
+			margin: 10px;
+			padding: 10px;
+			height: 350px;
+		}
+		#descriptionContainer {
+			flex-basis: 100%;
+			margin: 10px;
+			padding: 10px;
+			background-color: #263238;
+			border: 5px solid grey;
+			border-radius: 15px;
+			overflow-y: scroll;
+			height: 350px;
+		}
+		#image {
+			display: block;
+			margin: auto;
+			width: 100%;
+			height: auto;
+		}
+		#statsContainer {
+			flex-basis: 60%;
+			border: 5px solid grey;
+			background-color: #263238;
+			border-radius: 15px;
+			padding: 10px;
+			display: flex;
+			flex-wrap: wrap;
+			margin: 0 10px;
+		}
+		#statsContainer > div {
+			margin: 5px;
+			width: 40%;
+		}
+
+		.statLabel {
+			font-weight: bold;
+		}
+		.statValue {
+			font-size: 20px;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="pokemon">
+		<div id="header">
+			<div id="number" class="headerElement"></div>
+			<div id="name" class="headerElement"></div>
+		</div>
+		<div id="imageContainer">
+			<img id="image"/>
+		</div>
+		<div id="statsContainer"></div>
+		<div id="descriptionContainer"></div>
+		<div id="buttonContainer">
+			<button id="previousBtn" class="navBtn">Previous</button>
+			<button id="randomBtn" class="navBtn">Random</button>
+			<button id="nextBtn" class="navBtn">Next</button>
+		</div>
+	</div>
+	<script>
+		"use strict";
+
+		let currentIndex = 0;
+		let totPokemon = 0;
+		let nameElement = document.getElementById('name');
+		let numberElement = document.getElementById('number');
+		let imageElement = document.getElementById('image');
+		let statsElement = document.getElementById('statsContainer');
+		let descriptionElement = document.getElementById('descriptionContainer');
+		let cachedPokemon = {};
+
+		fetch('https://pokeapi.co/api/v2/pokemon/').then(response => response.json().then(data => {
+			if (data.count) {
+				totPokemon = data.count;
+			}
+		}));
+
+		const fetchSpecies = (url) => {
+			fetch(url).then(resp => resp.json().then(description => {
+				console.log(description);
+				descriptionElement.innerHTML = '';
+
+				if (description.flavor_text_entries) {
+					let usedText = [];
+					description.flavor_text_entries.forEach((item) => {
+						let entry = item.flavor_text.replace('', ' ');
+						if (item.language.name == 'en' && usedText.indexOf(entry) == -1) {
+							usedText.push(entry);
+							descriptionElement.innerHTML += `<p>${entry}</p>`;
+						}
+					});
+					cachedPokemon[currentIndex].cachedText = usedText;
+				}
+			}));
+		}
+
+		const updateInterface = (pokemon) => {
+			console.log(pokemon);
+			if (!cachedPokemon[currentIndex]) {
+				cachedPokemon[currentIndex] = pokemon;
+			}
+			nameElement.innerHTML = 'Loading...';
+			statsElement.innerHTML = 'Loading...';
+			descriptionElement.innerHTML = 'Loading...';
+
+			if (pokemon.name) {
+				nameElement.innerHTML =  pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1);
+				numberElement.innerHTML = pokemon.id;
+			}
+			if (pokemon.sprites) {
+				imageElement.src = pokemon.sprites.front_default;
+			}
+
+			if (pokemon.species) {
+				if (pokemon.cachedText) {
+					descriptionElement.innerHTML = '';
+					pokemon.cachedText.forEach((entry) => {
+						descriptionElement.innerHTML += `<p>${entry}</p>`;
+					});
+				}
+				else {
+					fetchSpecies(pokemon.species.url);
+				}
+			}
+
+			statsElement.innerHTML = `<div><span class="statLabel">HEIGHT:</span> <span class="statValue">${pokemon.height}</span></div>`;
+			statsElement.innerHTML += `<div><span class="statLabel">WEIGHT:</span> <span class="statValue">${pokemon.weight}</span></div>`;
+
+			if (pokemon.stats) {
+				for (let i = 0; i < pokemon.stats.length; i++) {
+					statsElement.innerHTML += `<div><span class="statLabel">${pokemon.stats[i].stat.name.toUpperCase()}:</span> <span class="statValue">${pokemon.stats[i].base_stat}</span></div>`;
+				}
+			}
+		}
+
+		const getPokemon = () => {
+			fetch('https://pokeapi.co/api/v2/pokemon/'+currentIndex).then(resp => resp.json().then(pokemon => {
+				updateInterface(pokemon);
+			}));
+		}
+
+		const getRandomPokemon = () => {
+			nameElement.innerHTML = 'Loading...';
+			statsElement.innerHTML = 'Loading...';
+			descriptionElement.innerHTML = 'Loading...';
+			if (totPokemon) {
+				currentIndex = Math.floor(Math.random() * totPokemon);
+				if (cachedPokemon[currentIndex]) {
+					console.log("is cached");
+					updateInterface(cachedPokemon[currentIndex]);
+				}
+				else {
+					getPokemon();
+				}
+			}
+			else {
+				fetch('https://pokeapi.co/api/v2/pokemon/').then(response => response.json().then(data => {
+					if (data.count) {
+						totPokemon = data.count;
+						currentIndex = Math.floor(Math.random() * data.count);
+
+						try {
+							if (cachedPokemon[currentIndex]) {
+								console.log("is cached");
+								updateInterface(cachedPokemon[currentIndex]);
+							}
+							else {
+								getPokemon();
+							}
+						}
+						catch(e) {
+							alert('Error retrieving Pokemon, try again');
+						}
+					}
+				}));
+			}
+		}
+
+		document.getElementById('nextBtn').addEventListener('click', (e) => {
+			e.preventDefault();
+			if (totPokemon) {
+				currentIndex = (1 + currentIndex) % totPokemon;
+
+			}
+			else {
+				currentIndex = 1;
+			}
+			console.log("getting: " + currentIndex);
+			if (cachedPokemon[currentIndex]) {
+				console.log("is cached");
+				updateInterface(cachedPokemon[currentIndex]);
+			}
+			else {
+				getPokemon();
+			}
+		});
+
+		document.getElementById('previousBtn').addEventListener('click', (e) => {
+			e.preventDefault();
+			if (totPokemon) {
+				currentIndex--;
+				if (currentIndex < 1) {
+					currentIndex = totPokemon;
+				}
+			}
+			else {
+				currentIndex = totPokemon;
+			}
+			console.log("getting: " + currentIndex);
+			if (cachedPokemon[currentIndex]) {
+				console.log("is cached");
+				updateInterface(cachedPokemon[currentIndex]);
+			}
+			else {
+				getPokemon();
+			}
+		})
+
+		document.getElementById('randomBtn').addEventListener('click', (e) => {
+			e.preventDefault();
+			getRandomPokemon();
+		});
+
+	</script>
+</body>
+</html>
